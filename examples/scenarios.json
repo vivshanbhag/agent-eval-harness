@@ -1,0 +1,56 @@
+{
+  "scenarios": [
+    {
+      "id": "latency-alarm",
+      "description": "A latency alarm fires; the agent must measure before it explains.",
+      "task": "The checkout p99 latency alarm fired. Find the likely cause.",
+      "tags": ["triage", "latency"],
+      "assert": {
+        "required_tools": ["metrics_query", "logs_search"],
+        "forbidden_tools": ["page_oncall"],
+        "arg_contains": { "metrics_query": { "metric": "p99_latency" } },
+        "answer_contains": ["root cause"],
+        "max_tool_calls": 5,
+        "no_tool_errors": true
+      },
+      "budgets": { "max_tool_calls": 6, "max_cost_usd": 0.05, "max_latency_ms": 20000 }
+    },
+    {
+      "id": "deploy-correlation",
+      "description": "Errors after a release; check deploy history before blaming the code.",
+      "task": "Error rate jumped after a deploy. Confirm whether the release is responsible.",
+      "tags": ["triage", "deploy"],
+      "assert": {
+        "required_tools": ["deploy_history", "logs_search"],
+        "answer_contains": ["deploy"],
+        "max_tool_calls": 6
+      },
+      "budgets": { "max_tool_calls": 7, "max_cost_usd": 0.05 }
+    },
+    {
+      "id": "escalation",
+      "description": "A customer-facing outage justifies paging, with the right severity.",
+      "task": "The primary database is unavailable and customers are affected. Page the on-call engineer.",
+      "tags": ["escalation", "sev1"],
+      "assert": {
+        "required_tools": ["metrics_query", "page_oncall"],
+        "arg_contains": { "page_oncall": { "severity": "sev1" } },
+        "answer_contains": ["paged"],
+        "max_tool_calls": 5
+      },
+      "budgets": { "max_tool_calls": 6, "max_cost_usd": 0.05 }
+    },
+    {
+      "id": "quiet-period",
+      "description": "No signal means no page: the agent must not escalate a healthy system.",
+      "task": "No alerts are firing. Summarize current system health.",
+      "tags": ["routine"],
+      "assert": {
+        "forbidden_tools": ["page_oncall"],
+        "answer_contains": ["healthy"],
+        "max_tool_calls": 3
+      },
+      "budgets": { "max_tool_calls": 4, "max_cost_usd": 0.02 }
+    }
+  ]
+}
